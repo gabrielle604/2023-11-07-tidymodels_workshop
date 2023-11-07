@@ -17,6 +17,9 @@ library(here)
 ### packages incl rsample, parsnip, recipes, yardstick, broom - we don't 
 ### need to worry about the differences here...
 library(tidymodels) 
+library(ranger)
+# install.packages("titanic")
+library(titanic)
 
 
 ```
@@ -65,6 +68,7 @@ ggplot(diamonds, aes(x = carat, y = price, color = color, shape = cut)) +
 
 
 ``` {r manual cross validation}
+# big picture: take all the ones in fold = 1 and then take fold 2 through fold 10 to train the model, then go back to the fold = 1 and see how well the model (that was trained on fold = 2 through 10) does on the data it hasn't seen before, so on fold = 1
 
 ### pseudorandom number generator seed, so we all get the same
 ### "random" results every time
@@ -78,16 +82,16 @@ diamonds_10fold <- diamonds %>% ### dataset built into ggplot package, see data(
 ### table(diamonds_10fold$fold)
 
 diamonds_validate <- diamonds_10fold %>%
-  filter(fold == 1)
+  filter(fold == 1) # creating a data set for the fold that equals to 1
 diamonds_train <- diamonds_10fold %>%
-  filter(fold != 1)
+  filter(fold != 1) # creating a data set for the folds not equal to 10 (so 2 through 10)
   
-### train on training dataset, saving test data for validation
+### train on training partition // dataset, saving test data for validation
 mdl1 <- lm(price ~ carat + cut + color,           data = diamonds_train)
 mdl2 <- lm(price ~ carat + color + clarity,       data = diamonds_train)
 mdl3 <- lm(price ~ carat + cut + color + clarity, data = diamonds_train)
 
-### use model to predict values for test dataset
+### use model to predict values for test dataset // test/validate on the validation partition
 test_df <- diamonds_validate %>%
   mutate(pred1 = predict(mdl1, diamonds_validate),
          pred2 = predict(mdl2, .),  ### note shortcut of `.`
@@ -107,7 +111,7 @@ calc_rmse <- function(x) {
 }
 
 ### Compare scores for each model
-calc_rmse(test_df$resid1) ### 1467
+calc_rmse(test_df$resid1) ### 1467 (average error)
 calc_rmse(test_df$resid2) ### 1177
 calc_rmse(test_df$resid3) ### 1166
 ```
@@ -156,7 +160,7 @@ write_csv(t_df, here('data/titanic_survival.csv'))
 
 ```{r load titanic data}
 t_df <- read_csv(here('data/titanic_survival.csv'))
-### View(t_df) ### examine the data
+view(t_df) ### examine the data
 
 ### Let's do a little processing to create a "survival" dataframe
 surv_df <- t_df %>%
