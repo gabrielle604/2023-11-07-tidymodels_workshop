@@ -234,6 +234,7 @@ surv_test_predict <- surv_test_df %>%
   mutate(predict(blr_fit, new_data = ., type = 'prob'))
     ### note use of `.` as shortcut for "the current dataframe"
 
+# how many times did it predict that they survived and how many actually survived; how many times did it predict they didn't survive and how many actually didn't survive
 table(surv_test_predict %>%
         select(survived, .pred_class))
 
@@ -241,6 +242,9 @@ table(surv_test_predict %>%
 # survived  0  1
 #        0 93 17
 #        1 17 52
+
+# correctly predicted survival 52 times
+# incorrectly predicted survival for passengers who didn't survive 17 times
 ```
 
 Try it with a new formula above, can you find a model that improves accuracy?  How much worse is a model based only on sex or only on passenger class?
@@ -248,10 +252,14 @@ Try it with a new formula above, can you find a model that improves accuracy?  H
 Metrics: we can use metrics from the `yardstick` package (within `tidymodels`) to test accuracy and the Receiver Operating Characteristic curve...
 ```{r}
 accuracy(surv_test_predict, truth = survived, estimate = .pred_class)
+# about 81% accuracy, about 19% false positives/false negatives
 ```
 
 ![from https://glassboxmedicine.com/2019/02/23/measuring-performance-auc-auroc/](img/roc-curve-v2.png)
 ```{r}
+# ROC = receiver operating characteristic [curve]
+# area under this curve is a common metric referenced; tells us how good our model is at predicting
+
 roc_df <- roc_curve(surv_test_predict, truth = survived, .pred_0)
 autoplot(roc_df)
 
